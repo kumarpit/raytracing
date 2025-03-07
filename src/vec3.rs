@@ -32,6 +32,16 @@ impl Vec3 {
     pub fn length_squared(&self) -> f64 {
         self.e[0] * self.e[0] + self.e[1] * self.e[1] + self.e[2] * self.e[2]
     }
+
+    pub fn into_unit(self) -> Self {
+        self / self.length()
+    }
+}
+
+impl From<f64> for Vec3 {
+    fn from(v: f64) -> Vec3 {
+        Vec3::new(v, v, v)
+    }
 }
 
 // Output formatting
