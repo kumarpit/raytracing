@@ -1,4 +1,9 @@
-use crate::{common::Interval, hittable::Hittable, vec3::Point3};
+use crate::{
+    hittable::{HitRecord, Hittable},
+    interval::Interval,
+    ray::Ray,
+    vec3::Point3,
+};
 
 pub struct Sphere {
     center: Point3,
@@ -12,12 +17,7 @@ impl Sphere {
 }
 
 impl Hittable for Sphere {
-    fn hit(
-        &self,
-        ray: &crate::ray::Ray,
-        interval: Interval,
-        record: &mut crate::hittable::HitRecord,
-    ) -> bool {
+    fn hit(&self, ray: &Ray, interval: Interval, record: &mut HitRecord) -> bool {
         // Ray-Sphere intersection
         let oc = self.center - ray.origin();
         let a = ray.direction().length_squared();

@@ -2,8 +2,9 @@ use std::io::Write;
 
 use crate::{
     color::{write_color, Color},
-    common::{lerp, random, NON_NEGATIVE_INTERVAL},
+    common::{lerp, random, INFINITY},
     hittable::{HitRecord, Hittable},
+    interval::{Interval, ANTI_SHADOW_ACNE_HIT_INTERVAL, EMPTY_INTERVAL},
     ray::Ray,
     vec3::{Point3, Vec3},
     world::World,
@@ -37,6 +38,7 @@ pub struct Camera {
     pixel_delta_u: Vec3,
     pixel_delta_v: Vec3,
     samples_per_pixel: i32,
+    max_depth: i32,
 }
 
 impl Camera {
@@ -64,11 +66,12 @@ impl Camera {
             pixel_upper_left,
             pixel_delta_u,
             pixel_delta_v,
-            samples_per_pixel: 100,
+            samples_per_pixel: 10,
+            max_depth: 10,
         }
     }
 
-    pub fn render(&self, world: World, mut out: impl Write) {
+    pub fn render(&self, world: &World, out: &mut impl Write) {
         if self.image_height < 1 {
             panic!("IMAGE_HEIGHT is way too small, use a larger width");
         }
@@ -86,19 +89,20 @@ impl Camera {
                 // Anti-aliasing
                 (0..self.samples_per_pixel).for_each(|_| {
                     let ray = self.get_ray(i, j);
-                    pixel_color = pixel_color + self.ray_color(ray, &world);
+                    pixel_color = pixel_color + self.ray_color(&ray, world, self.max_depth);
                 });
-                write_color(&mut out, pixel_color / self.samples_per_pixel as f64);
+                write_color(out, pixel_color / self.samples_per_pixel as f64);
             }
         }
     }
 
-    fn ray_color<T: Hittable>(&self, ray: Ray, obj: &T) -> Color {
+    fn ray_color<T: Hittable>(&self, ray: &Ray, obj: &T, depth: i32) -> Color {
         let mut rec: HitRecord = HitRecord::new();
-        let did_hit = obj.hit(&ray, NON_NEGATIVE_INTERVAL, &mut rec);
-        if did_hit {
-            0.5 * rec.normal.map(|x| -> f64 { x + 1.0 })
+        if obj.hit(&ray, ANTI_SHADOW_ACNE_HIT_INTERVAL, &mut rec) {
+            let direction = Vec3::random_on_hemisphere(rec.normal);
+            0.5 * self.ray_color(&Ray::new(rec.point, direction), obj, depth - 1)
         } else {
+            // Generates a blue-to-white gradient background
             let unit_direction = ray.direction().into_unit();
             let t = 0.5 * (unit_direction.1 + 1.0);
             lerp(Color::from(1.0), Color::new(0.5, 0.7, 1.0), t)

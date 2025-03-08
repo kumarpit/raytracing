@@ -1,6 +1,7 @@
 use crate::{
-    common::Interval,
     hittable::{HitRecord, Hittable},
+    interval::Interval,
+    ray::Ray,
 };
 
 // Our world is just a list of Hittable objects
@@ -20,12 +21,7 @@ impl World {
 }
 
 impl Hittable for World {
-    fn hit(
-        &self,
-        ray: &crate::ray::Ray,
-        interval: Interval,
-        record: &mut crate::hittable::HitRecord,
-    ) -> bool {
+    fn hit(&self, ray: &Ray, interval: Interval, record: &mut HitRecord) -> bool {
         let mut temp_record = HitRecord::new();
         let mut did_hit_something = false;
         let mut closest_so_far = interval.max();

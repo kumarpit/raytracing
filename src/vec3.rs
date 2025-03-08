@@ -1,3 +1,7 @@
+use crate::common::{random, random_in_range};
+
+/// A three-dimensional vector of floats used to represent colors, coordinates, etc
+
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Vec3(pub f64, pub f64, pub f64);
 pub type Point3 = Vec3;
@@ -5,6 +9,41 @@ pub type Point3 = Vec3;
 impl Vec3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Vec3(x, y, z)
+    }
+
+    /// Generates a random vector with each component in the range [0, 1)
+    pub fn random() -> Self {
+        Vec3(random(), random(), random())
+    }
+
+    /// Generates a random vector with each component in the range [x_min, x_max)
+    pub fn random_in_range(x_min: f64, x_max: f64) -> Self {
+        Vec3(
+            random_in_range(x_min, x_max),
+            random_in_range(x_min, x_max),
+            random_in_range(x_min, x_max),
+        )
+    }
+
+    /// Generates a vector that lies within the unit sphere (i.e has length < 1)
+    pub fn in_unit_sphere() -> Self {
+        loop {
+            let candidate = Vec3::random_in_range(-1.0, 1.0);
+            if candidate.length_squared() < 1.0 {
+                return candidate;
+            }
+        }
+    }
+
+    /// Generates a unit vector (i.e lies on the unit sphere) that points towards the normal
+    /// direction
+    pub fn random_on_hemisphere(normal: Vec3) -> Self {
+        let unit_random_vec = Vec3::in_unit_sphere().into_unit();
+        if normal.dot(unit_random_vec) > 0.0 {
+            unit_random_vec
+        } else {
+            -unit_random_vec
+        }
     }
 
     pub fn dot(&self, other: Self) -> f64 {
@@ -32,6 +71,7 @@ impl Vec3 {
         self / self.length()
     }
 
+    /// Applies f onto each component of the vector
     pub fn map(self, mut f: impl FnMut(f64) -> f64) -> Self {
         Vec3(f(self.0), f(self.1), f(self.2))
     }

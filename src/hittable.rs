@@ -1,5 +1,5 @@
 use crate::{
-    common::Interval,
+    interval::Interval,
     ray::Ray,
     vec3::{Point3, Vec3},
 };

@@ -2,6 +2,7 @@ mod camera;
 mod color;
 mod common;
 mod hittable;
+mod interval;
 mod ray;
 mod sphere;
 mod vec3;
@@ -14,7 +15,7 @@ use vec3::Point3;
 use world::World;
 
 fn main() {
-    let file = OpenOptions::new()
+    let mut file = OpenOptions::new()
         .write(true)
         .truncate(true) // Clear contents
         .create(true)
@@ -27,5 +28,5 @@ fn main() {
     world.add(Box::new(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0)));
 
     let camera = Camera::new();
-    camera.render(world, file);
+    camera.render(&world, &mut file);
 }
