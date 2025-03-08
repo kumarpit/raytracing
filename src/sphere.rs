@@ -1,4 +1,4 @@
-use crate::{hittable::Hittable, vec3::Point3};
+use crate::{common::is_in_range, hittable::Hittable, vec3::Point3};
 
 pub struct Sphere {
     center: Point3,
@@ -34,16 +34,17 @@ impl Hittable for Sphere {
 
         // Find the nearest root that lies in the given range
         let mut root = (h - sqrt_d) / a;
-        if root <= t_min || root >= t_max {
+        if !is_in_range(t_min, t_max, root) {
             root = (h + sqrt_d) / a;
-            if root <= t_min || root >= t_max {
+            if !is_in_range(t_min, t_max, root) {
                 return false;
             }
         }
 
         record.t = root;
         record.point = ray.at(root);
-        record.normal = (record.point - self.center) / self.radius; // Normalize
+        let outward_normal = (record.point - self.center) / self.radius; // Normalize
+        record.set_face_normal(ray, outward_normal);
 
         true
     }

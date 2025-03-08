@@ -1,17 +1,21 @@
-use std::{f32::INFINITY, io::Write};
+use std::io::Write;
 mod color;
+mod common;
 mod hittable;
 mod ray;
 mod sphere;
 mod vec3;
+mod world;
 
 use color::{write_color, Color};
+use common::{lerp, INFINITY};
 use core::panic;
 use hittable::{HitRecord, Hittable};
 use ray::Ray;
 use sphere::Sphere;
 use std::fs::OpenOptions;
 use vec3::{Point3, Vec3};
+use world::World;
 
 /**
  * IMAGE
@@ -31,13 +35,13 @@ const FOCAL_LENGTH: f64 = 1.0;
 
 fn ray_color<T: Hittable>(ray: Ray, obj: &T) -> Color {
     let mut rec: HitRecord = HitRecord::new();
-    let did_hit = obj.hit(&ray, 0.0, INFINITY.into(), &mut rec);
+    let did_hit = obj.hit(&ray, 0.0, INFINITY, &mut rec);
     if did_hit {
         0.5 * rec.normal.map(|x| -> f64 { x + 1.0 })
     } else {
         let unit_direction = ray.direction().into_unit();
         let t = 0.5 * (unit_direction.1 + 1.0);
-        (1.0 - t) * Color::from(1.0) + t * Color::new(0.5, 0.7, 1.0)
+        lerp(Color::from(1.0), Color::new(0.5, 0.7, 1.0), t)
     }
 }
 
@@ -74,14 +78,17 @@ fn main() {
 
     writeln!(file, "P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).expect("writing header");
 
-    let sphere = Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5);
+    // Initialize world
+    let mut world = World::new();
+    world.add(Box::new(Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5)));
+    world.add(Box::new(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0)));
 
     for j in 0..IMAGE_HEIGHT {
         for i in 0..IMAGE_WIDTH {
             let pixel_center =
                 pixel_upper_left + (i as f64 * pixel_delta_u) + (j as f64 * pixel_delta_v);
             let ray = Ray::new(camera_center, pixel_center - camera_center);
-            let pixel_color = ray_color(ray, &sphere);
+            let pixel_color = ray_color(ray, &world);
             write_color(&mut file, pixel_color);
         }
     }
