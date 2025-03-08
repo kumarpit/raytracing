@@ -1,3 +1,4 @@
+use std::io::Write;
 mod color;
 mod ray;
 mod vec3;
@@ -5,7 +6,7 @@ mod vec3;
 use color::{write_color, Color};
 use core::panic;
 use ray::Ray;
-use std::io;
+use std::fs::OpenOptions;
 use vec3::{Point3, Vec3};
 
 /**
@@ -25,15 +26,41 @@ const VIEWPORT_WIDTH: f64 = VIEWPORT_HEIGHT * (IMAGE_WIDTH / IMAGE_HEIGHT) as f6
 const FOCAL_LENGTH: f64 = 1.0;
 
 fn ray_color(ray: Ray) -> Color {
-    let unit_direction = ray.direction().into_unit();
-    let t = 0.5 * (unit_direction.1 + 1.0);
-    (1.0 - t) * Color::from(1.0) + t * Color::new(0.5, 0.7, 1.0)
+    if hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, ray) {
+        Color::new(1.0, 0.0, 0.0)
+    } else {
+        let unit_direction = ray.direction().into_unit();
+        let t = 0.5 * (unit_direction.1 + 1.0);
+        (1.0 - t) * Color::from(1.0) + t * Color::new(0.5, 0.7, 1.0)
+    }
+}
+
+fn hit_sphere(center: Point3, radius: f64, ray: Ray) -> bool {
+    let oc = center - ray.origin();
+    let a = ray.direction().dot(ray.direction());
+    let b = -2.0 * oc.dot(ray.direction());
+    let c = oc.dot(oc) - radius * radius;
+    let discriminant = b * b - 4.0 * a * c;
+    return discriminant >= 0.0;
 }
 
 fn main() {
     if IMAGE_HEIGHT < 1 {
         panic!("IMAGE_HEIGHT is way too small, use a larger width");
     }
+
+    println!("Image dimensions: {} ✕ {}", IMAGE_WIDTH, IMAGE_HEIGHT);
+    println!(
+        "Viewport dimensions: {} ✕ {}",
+        VIEWPORT_WIDTH, VIEWPORT_HEIGHT
+    );
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open("./image.ppm")
+        .unwrap();
 
     let camera_center = Point3::from(0.0);
 
@@ -48,7 +75,7 @@ fn main() {
     let pixel_delta_v = viewport_vertical / IMAGE_HEIGHT as f64;
     let pixel_upper_left = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
-    print!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT);
+    writeln!(file, "P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).expect("writing header");
 
     for j in 0..IMAGE_HEIGHT {
         for i in 0..IMAGE_WIDTH {
@@ -56,7 +83,7 @@ fn main() {
                 pixel_upper_left + (i as f64 * pixel_delta_u) + (j as f64 * pixel_delta_v);
             let ray = Ray::new(camera_center, pixel_center - camera_center);
             let pixel_color = ray_color(ray);
-            write_color(&mut io::stdout(), pixel_color);
+            write_color(&mut file, pixel_color);
         }
     }
 }
