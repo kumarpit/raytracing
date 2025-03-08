@@ -1,152 +1,120 @@
-use std::fmt::{Display, Formatter, Result};
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
-
-#[derive(Copy, Clone, Default)]
-pub struct Vec3 {
-    e: [f64; 3],
-}
-
+#[derive(Copy, Clone, Default, Debug)]
+pub struct Vec3(pub f64, pub f64, pub f64);
 pub type Point3 = Vec3;
 
 impl Vec3 {
-    pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3 { e: [x, y, z] }
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Vec3(x, y, z)
     }
 
-    pub fn x(&self) -> f64 {
-        self.e[0]
+    pub fn dot(&self, other: Self) -> f64 {
+        self.zip_with(other, core::ops::Mul::mul)
+            .reduce(core::ops::Add::add)
     }
 
-    pub fn y(&self) -> f64 {
-        self.e[1]
-    }
-
-    pub fn z(&self) -> f64 {
-        self.e[2]
+    pub fn cross(&self, other: &Self) -> Self {
+        Vec3(
+            self.1 * other.2 - self.2 * other.1,
+            -(self.0 * other.2 - self.2 * other.0),
+            self.0 * other.1 - self.1 * other.0,
+        )
     }
 
     pub fn length(&self) -> f64 {
-        f64::sqrt(self.length_squared())
-    }
-
-    pub fn length_squared(&self) -> f64 {
-        self.e[0] * self.e[0] + self.e[1] * self.e[1] + self.e[2] * self.e[2]
+        self.dot(*self).sqrt()
     }
 
     pub fn into_unit(self) -> Self {
         self / self.length()
     }
+
+    pub fn map(self, mut f: impl FnMut(f64) -> f64) -> Self {
+        Vec3(f(self.0), f(self.1), f(self.2))
+    }
+
+    pub fn zip_with(self, other: Vec3, mut f: impl FnMut(f64, f64) -> f64) -> Self {
+        Vec3(f(self.0, other.0), f(self.1, other.1), f(self.2, other.2))
+    }
+
+    pub fn reduce(self, f: impl Fn(f64, f64) -> f64) -> f64 {
+        f(f(self.0, self.1), self.2)
+    }
 }
 
 impl From<f64> for Vec3 {
-    fn from(v: f64) -> Vec3 {
-        Vec3::new(v, v, v)
+    fn from(v: f64) -> Self {
+        Vec3(v, v, v)
     }
 }
 
-// Output formatting
-impl Display for Vec3 {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "{} {} {}", self.e[0], self.e[1], self.e[2])
-    }
-}
-
-// -Vec3
-impl Neg for Vec3 {
+/// Vec3 * Vec3
+impl std::ops::Mul for Vec3 {
     type Output = Vec3;
 
-    fn neg(self) -> Vec3 {
-        Vec3::new(-self.x(), -self.y(), -self.z())
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        self.zip_with(rhs, std::ops::Mul::mul)
     }
 }
 
-// Vec3 += Vec3
-impl AddAssign for Vec3 {
-    fn add_assign(&mut self, v: Vec3) {
-        *self = *self + v;
-    }
-}
-
-// Vec3 *= f64
-impl MulAssign<f64> for Vec3 {
-    fn mul_assign(&mut self, t: f64) {
-        *self = *self * t;
-    }
-}
-
-// Vec3 /= f64
-impl DivAssign<f64> for Vec3 {
-    fn div_assign(&mut self, t: f64) {
-        *self = *self / t;
-    }
-}
-
-// Vec3 + Vec3
-impl Add for Vec3 {
+/// `scalar * vector`
+impl std::ops::Mul<Vec3> for f64 {
     type Output = Vec3;
 
-    fn add(self, v: Vec3) -> Vec3 {
-        Vec3::new(self.x() + v.x(), self.y() + v.y(), self.z() + v.z())
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        Vec3::from(self) * rhs
     }
 }
 
-// Vec3 - Vec3
-impl Sub for Vec3 {
+/// Element-wise division.
+impl std::ops::Div for Vec3 {
     type Output = Vec3;
 
-    fn sub(self, v: Vec3) -> Vec3 {
-        Vec3::new(self.x() - v.x(), self.y() - v.y(), self.z() - v.z())
+    fn div(self, rhs: Vec3) -> Self::Output {
+        self.zip_with(rhs, std::ops::Div::div)
     }
 }
 
-// Vec3 * Vec3
-impl Mul for Vec3 {
+/// `vector / scalar`
+impl std::ops::Div<f64> for Vec3 {
     type Output = Vec3;
 
-    fn mul(self, v: Vec3) -> Vec3 {
-        Vec3::new(self.x() * v.x(), self.y() * v.y(), self.z() * v.z())
+    fn div(self, rhs: f64) -> Self::Output {
+        self.map(|x| x / rhs)
     }
 }
 
-// f64 * Vec3
-impl Mul<Vec3> for f64 {
+/// `vector + vector`
+impl std::ops::Add for Vec3 {
     type Output = Vec3;
 
-    fn mul(self, v: Vec3) -> Vec3 {
-        Vec3::new(self * v.x(), self * v.y(), self * v.z())
+    fn add(self, rhs: Vec3) -> Self::Output {
+        self.zip_with(rhs, std::ops::Add::add)
     }
 }
 
-// Vec3 * f64
-impl Mul<f64> for Vec3 {
+/// `scalar + vector`
+impl std::ops::Add<Vec3> for f64 {
     type Output = Vec3;
 
-    fn mul(self, t: f64) -> Vec3 {
-        Vec3::new(self.x() * t, self.y() * t, self.z() * t)
+    fn add(self, rhs: Vec3) -> Self::Output {
+        rhs.map(|x| self + x)
     }
 }
 
-// Vec3 / f64
-impl Div<f64> for Vec3 {
+/// `vector - vector`
+impl std::ops::Sub for Vec3 {
     type Output = Vec3;
 
-    fn div(self, t: f64) -> Vec3 {
-        Vec3::new(self.x() / t, self.y() / t, self.z() / t)
+    fn sub(self, rhs: Vec3) -> Self::Output {
+        self.zip_with(rhs, std::ops::Sub::sub)
     }
 }
 
-pub fn dot(u: Vec3, v: Vec3) -> f64 {
-    u.e[0] * v.e[0] + u.e[1] * v.e[1] + u.e[2] * v.e[2]
-}
+/// `-vector`
+impl std::ops::Neg for Vec3 {
+    type Output = Vec3;
 
-pub fn cross(u: Vec3, v: Vec3) -> Vec3 {
-    Vec3::new(
-        u.e[1] * v.e[2] - u.e[2] * v.e[1],
-        u.e[2] * v.e[0] - u.e[0] * v.e[2],
-        u.e[0] * v.e[1] - u.e[1] * v.e[0],
-    )
-}
-
-pub fn unit(v: Vec3) -> Vec3 {
-    v / v.length()
+    fn neg(self) -> Self::Output {
+        self.map(std::ops::Neg::neg)
+    }
 }

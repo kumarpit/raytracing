@@ -26,7 +26,7 @@ const FOCAL_LENGTH: f64 = 1.0;
 
 fn ray_color(ray: Ray) -> Color {
     let unit_direction = ray.direction().into_unit();
-    let t = 0.5 * (unit_direction.y() + 1.0);
+    let t = 0.5 * (unit_direction.1 + 1.0);
     (1.0 - t) * Color::from(1.0) + t * Color::new(0.5, 0.7, 1.0)
 }
 
@@ -50,7 +50,7 @@ fn main() {
 
     print!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT);
 
-    for j in (0..IMAGE_HEIGHT) {
+    for j in 0..IMAGE_HEIGHT {
         for i in 0..IMAGE_WIDTH {
             let pixel_center =
                 pixel_upper_left + (i as f64 * pixel_delta_u) + (j as f64 * pixel_delta_v);
