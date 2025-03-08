@@ -24,6 +24,10 @@ impl Vec3 {
         self.dot(*self).sqrt()
     }
 
+    pub fn length_squared(&self) -> f64 {
+        self.dot(*self)
+    }
+
     pub fn into_unit(self) -> Self {
         self / self.length()
     }

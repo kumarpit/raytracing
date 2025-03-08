@@ -1,11 +1,15 @@
-use std::io::Write;
+use std::{f32::INFINITY, io::Write};
 mod color;
+mod hittable;
 mod ray;
+mod sphere;
 mod vec3;
 
 use color::{write_color, Color};
 use core::panic;
+use hittable::{HitRecord, Hittable};
 use ray::Ray;
+use sphere::Sphere;
 use std::fs::OpenOptions;
 use vec3::{Point3, Vec3};
 
@@ -25,28 +29,15 @@ const VIEWPORT_HEIGHT: f64 = 2.0;
 const VIEWPORT_WIDTH: f64 = VIEWPORT_HEIGHT * (IMAGE_WIDTH as f64 / IMAGE_HEIGHT as f64);
 const FOCAL_LENGTH: f64 = 1.0;
 
-fn ray_color(ray: Ray) -> Color {
-    let t = hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, ray);
-    if t > 0.0 {
-        let n = (ray.at(t) - Point3::new(0.0, 0.0, -1.0)).into_unit();
-        0.5 * n.map(|x| -> f64 { x + 1.0 })
+fn ray_color<T: Hittable>(ray: Ray, obj: &T) -> Color {
+    let mut rec: HitRecord = HitRecord::new();
+    let did_hit = obj.hit(&ray, 0.0, INFINITY.into(), &mut rec);
+    if did_hit {
+        0.5 * rec.normal.map(|x| -> f64 { x + 1.0 })
     } else {
         let unit_direction = ray.direction().into_unit();
         let t = 0.5 * (unit_direction.1 + 1.0);
         (1.0 - t) * Color::from(1.0) + t * Color::new(0.5, 0.7, 1.0)
-    }
-}
-
-fn hit_sphere(center: Point3, radius: f64, ray: Ray) -> f64 {
-    let oc = center - ray.origin();
-    let a = ray.direction().dot(ray.direction());
-    let b = -2.0 * oc.dot(ray.direction());
-    let c = oc.dot(oc) - radius * radius;
-    let discriminant = b * b - (4.0 * a * c);
-    if discriminant < 0.0 {
-        -1.0
-    } else {
-        (-b - discriminant.sqrt()) / (2.0 * a)
     }
 }
 
@@ -83,12 +74,14 @@ fn main() {
 
     writeln!(file, "P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).expect("writing header");
 
+    let sphere = Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5);
+
     for j in 0..IMAGE_HEIGHT {
         for i in 0..IMAGE_WIDTH {
             let pixel_center =
                 pixel_upper_left + (i as f64 * pixel_delta_u) + (j as f64 * pixel_delta_v);
             let ray = Ray::new(camera_center, pixel_center - camera_center);
-            let pixel_color = ray_color(ray);
+            let pixel_color = ray_color(ray, &sphere);
             write_color(&mut file, pixel_color);
         }
     }
