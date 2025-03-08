@@ -22,12 +22,14 @@ const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
 const VIEWPORT_HEIGHT: f64 = 2.0;
 // Not using ASPECT_RATIO directly here since it may not be the _actual_ ratio between the
 // the image dimensions given that they are not real-valued.
-const VIEWPORT_WIDTH: f64 = VIEWPORT_HEIGHT * (IMAGE_WIDTH / IMAGE_HEIGHT) as f64;
+const VIEWPORT_WIDTH: f64 = VIEWPORT_HEIGHT * (IMAGE_WIDTH as f64 / IMAGE_HEIGHT as f64);
 const FOCAL_LENGTH: f64 = 1.0;
 
 fn ray_color(ray: Ray) -> Color {
-    if hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, ray) {
-        Color::new(1.0, 0.0, 0.0)
+    let t = hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, ray);
+    if t > 0.0 {
+        let n = (ray.at(t) - Point3::new(0.0, 0.0, -1.0)).into_unit();
+        0.5 * n.map(|x| -> f64 { x + 1.0 })
     } else {
         let unit_direction = ray.direction().into_unit();
         let t = 0.5 * (unit_direction.1 + 1.0);
@@ -35,13 +37,17 @@ fn ray_color(ray: Ray) -> Color {
     }
 }
 
-fn hit_sphere(center: Point3, radius: f64, ray: Ray) -> bool {
+fn hit_sphere(center: Point3, radius: f64, ray: Ray) -> f64 {
     let oc = center - ray.origin();
     let a = ray.direction().dot(ray.direction());
     let b = -2.0 * oc.dot(ray.direction());
     let c = oc.dot(oc) - radius * radius;
-    let discriminant = b * b - 4.0 * a * c;
-    return discriminant >= 0.0;
+    let discriminant = b * b - (4.0 * a * c);
+    if discriminant < 0.0 {
+        -1.0
+    } else {
+        (-b - discriminant.sqrt()) / (2.0 * a)
+    }
 }
 
 fn main() {
@@ -57,7 +63,7 @@ fn main() {
 
     let mut file = OpenOptions::new()
         .write(true)
-        .truncate(true)
+        .truncate(true) // Clear contents
         .create(true)
         .open("./image.ppm")
         .unwrap();
