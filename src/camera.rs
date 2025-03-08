@@ -2,7 +2,7 @@ use std::io::Write;
 
 use crate::{
     color::{write_color, Color},
-    common::{lerp, NON_NEGATIVE_INTERVAL},
+    common::{lerp, random, NON_NEGATIVE_INTERVAL},
     hittable::{HitRecord, Hittable},
     ray::Ray,
     vec3::{Point3, Vec3},
@@ -36,6 +36,7 @@ pub struct Camera {
     pixel_upper_left: Point3,
     pixel_delta_u: Vec3,
     pixel_delta_v: Vec3,
+    samples_per_pixel: i32,
 }
 
 impl Camera {
@@ -63,6 +64,7 @@ impl Camera {
             pixel_upper_left,
             pixel_delta_u,
             pixel_delta_v,
+            samples_per_pixel: 100,
         }
     }
 
@@ -80,12 +82,13 @@ impl Camera {
         writeln!(out, "P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).expect("writing header");
         for j in 0..IMAGE_HEIGHT {
             for i in 0..IMAGE_WIDTH {
-                let pixel_center = self.pixel_upper_left
-                    + (i as f64 * self.pixel_delta_u)
-                    + (j as f64 * self.pixel_delta_v);
-                let ray = Ray::new(self.center, pixel_center - self.center);
-                let pixel_color = self.ray_color(ray, &world);
-                write_color(&mut out, pixel_color);
+                let mut pixel_color = Color::from(0.0);
+                // Anti-aliasing
+                (0..self.samples_per_pixel).for_each(|_| {
+                    let ray = self.get_ray(i, j);
+                    pixel_color = pixel_color + self.ray_color(ray, &world);
+                });
+                write_color(&mut out, pixel_color / self.samples_per_pixel as f64);
             }
         }
     }
@@ -100,5 +103,13 @@ impl Camera {
             let t = 0.5 * (unit_direction.1 + 1.0);
             lerp(Color::from(1.0), Color::new(0.5, 0.7, 1.0), t)
         }
+    }
+
+    fn get_ray(&self, i: i32, j: i32) -> Ray {
+        let offset = Vec3(random() - 0.5, random() - 0.5, 0.0);
+        let pixel_sample = self.pixel_upper_left
+            + ((i as f64 + offset.0) * self.pixel_delta_u)
+            + ((j as f64 + offset.1) * self.pixel_delta_v);
+        Ray::new(self.center, pixel_sample - self.center)
     }
 }
