@@ -1,4 +1,4 @@
-use crate::{common::is_in_range, hittable::Hittable, vec3::Point3};
+use crate::{common::Interval, hittable::Hittable, vec3::Point3};
 
 pub struct Sphere {
     center: Point3,
@@ -15,8 +15,7 @@ impl Hittable for Sphere {
     fn hit(
         &self,
         ray: &crate::ray::Ray,
-        t_min: f64,
-        t_max: f64,
+        interval: Interval,
         record: &mut crate::hittable::HitRecord,
     ) -> bool {
         // Ray-Sphere intersection
@@ -34,9 +33,10 @@ impl Hittable for Sphere {
 
         // Find the nearest root that lies in the given range
         let mut root = (h - sqrt_d) / a;
-        if !is_in_range(t_min, t_max, root) {
+
+        if !interval.surrounds(root) {
             root = (h + sqrt_d) / a;
-            if !is_in_range(t_min, t_max, root) {
+            if !interval.surrounds(root) {
                 return false;
             }
         }

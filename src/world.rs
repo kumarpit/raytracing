@@ -1,4 +1,7 @@
-use crate::hittable::{HitRecord, Hittable};
+use crate::{
+    common::Interval,
+    hittable::{HitRecord, Hittable},
+};
 
 // Our world is just a list of Hittable objects
 #[derive(Default)]
@@ -20,16 +23,19 @@ impl Hittable for World {
     fn hit(
         &self,
         ray: &crate::ray::Ray,
-        t_min: f64,
-        t_max: f64,
+        interval: Interval,
         record: &mut crate::hittable::HitRecord,
     ) -> bool {
         let mut temp_record = HitRecord::new();
         let mut did_hit_something = false;
-        let mut closest_so_far = t_max;
+        let mut closest_so_far = interval.max();
 
         for object in &self.objects {
-            if object.hit(ray, t_min, closest_so_far, &mut temp_record) {
+            if object.hit(
+                ray,
+                Interval::new(interval.min(), closest_so_far),
+                &mut temp_record,
+            ) {
                 did_hit_something = true;
                 closest_so_far = temp_record.t;
                 *record = temp_record.clone();

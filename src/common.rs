@@ -1,9 +1,14 @@
-/// Constants
+/**
+ * Constants
+ */
 pub use std::f64::consts::PI;
 pub use std::f64::INFINITY;
+pub use std::f64::NEG_INFINITY;
 use std::ops::{Add, Mul};
 
-/// Math utilities
+/**
+ * Math utilities
+ */
 pub fn deg_to_rad(deg: f64) -> f64 {
     deg * PI / 180.0
 }
@@ -16,7 +21,55 @@ where
     start * (1.0 - t) + end * t
 }
 
-/// Checks if t_min <= t <= t_max
-pub fn is_in_range(t_min: f64, t_max: f64, t: f64) -> bool {
-    t >= t_min && t <= t_max
+/// Real-Valued Interval utilities
+#[derive(Default)]
+pub struct Interval {
+    min: f64,
+    max: f64,
 }
+
+impl Interval {
+    pub fn new(min: f64, max: f64) -> Self {
+        Interval { min, max }
+    }
+
+    pub fn size(&self) -> f64 {
+        self.max - self.min
+    }
+
+    pub fn contains(&self, v: f64) -> bool {
+        self.min <= v && v <= self.max
+    }
+
+    pub fn surrounds(&self, v: f64) -> bool {
+        self.min < v && v < self.max
+    }
+
+    pub fn min(&self) -> f64 {
+        self.min
+    }
+
+    pub fn max(&self) -> f64 {
+        self.max
+    }
+}
+
+pub const EMPTY_INTERVAL: Interval = Interval {
+    min: INFINITY,
+    max: NEG_INFINITY,
+};
+
+pub const UNIVERSAL_INTERVAL: Interval = Interval {
+    min: NEG_INFINITY,
+    max: INFINITY,
+};
+
+pub const NON_NEGATIVE_INTERVAL: Interval = Interval {
+    min: 0.0,
+    max: INFINITY,
+};
+
+pub const NON_POSITIVE_INTERVAL: Interval = Interval {
+    min: NEG_INFINITY,
+    max: 0.0,
+};
