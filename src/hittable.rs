@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::{
-    interval::Interval,
+    common::math::Interval,
     material::Material,
     ray::Ray,
     vec3::{Point3, Vec3},

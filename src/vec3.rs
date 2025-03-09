@@ -1,9 +1,6 @@
-use std::f32::EPSILON;
+use crate::common::math::{random, random_in_range};
 
-use crate::common::{random, random_in_range};
-
-/// A three-dimensional vector of floats used to represent colors, coordinates, etc
-
+/// Represents a three-dimensional vector of floats used to represent colors, coordinates, etc
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Vec3(pub f64, pub f64, pub f64);
 pub type Point3 = Vec3;

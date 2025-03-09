@@ -2,7 +2,6 @@ mod camera;
 mod color;
 mod common;
 mod hittable;
-mod interval;
 mod material;
 mod ray;
 mod sphere;
@@ -32,7 +31,7 @@ fn main() {
 
     let mut world = World::new();
 
-    // TODO: would be nice to have some sort of a DSL to describe the world
+    // TODO: would be nice to have some sort of a DSL to describe the world -- Rust macros!
     world.add(Box::new(Sphere::new(
         Point3::new(0.0, -100.5, -1.0),
         100.0,

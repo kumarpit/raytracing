@@ -10,6 +10,18 @@ pub trait Material {
     ) -> bool;
 }
 
+// ============================================
+//
+// Lambertian Material
+//
+// The Lambertian material models "diffuse" objects - such objects have a matte appearance. This is
+// achieved by having the scattered rays follow the Lambertian distribution wherein the reflected
+// rays scatter in a direction near the surface normal. Another (more simplistic) approach to
+// achieving a diffuse object is to have the refelcted rays randomly scatter in the hemisphere
+// containing the surface normal - though these give less realistic results.
+//
+// ============================================
+
 pub struct Lambertian {
     albedo: Color,
 }
@@ -37,6 +49,14 @@ impl Material for Lambertian {
         true
     }
 }
+
+// ============================================
+//
+// Metal Material
+//
+// Shiny, shiny metals! Scattered rays are perfectly reflected about the surface normal.
+//
+// ============================================
 
 pub struct Metal {
     albedo: Color,

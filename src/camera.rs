@@ -2,24 +2,27 @@ use std::io::Write;
 
 use crate::{
     color::{write_color, Color},
-    common::{lerp, random, INFINITY},
+    common::math::{lerp, random, Interval, INFINITY},
     hittable::{HitRecord, Hittable},
-    interval::{Interval, ANTI_SHADOW_ACNE_HIT_INTERVAL, EMPTY_INTERVAL, POSITIVE_INTERVAL},
     ray::Ray,
     vec3::{Point3, Vec3},
     world::World,
 };
 
-/**
- * IMAGE
- */
+// TODO: These constants should probably be collected in a yaml file
+
+// ============================================
+// Image Configs
+// ============================================
+
 const ASPECT_RATIO: f64 = 16.0 / 9.0;
 const IMAGE_WIDTH: i32 = 400;
 const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
 
-/**
- * CAMERA
- */
+// ============================================
+// Viewport Configs
+// ============================================
+
 const VIEWPORT_HEIGHT: f64 = 2.0;
 // Not using ASPECT_RATIO directly here since it may not be the _actual_ ratio between the
 // the image dimensions given that they are not real-valued.
@@ -104,7 +107,8 @@ impl Camera {
             return Color::from(0.0);
         }
 
-        if obj.hit(&ray, ANTI_SHADOW_ACNE_HIT_INTERVAL, &mut rec) {
+        // Having the interval start at 0.001 helps resolve "shadow acne"
+        if obj.hit(&ray, Interval::new(0.001, INFINITY), &mut rec) {
             let mut attenuation = Color::default();
             let mut scattered = Ray::default();
             if rec

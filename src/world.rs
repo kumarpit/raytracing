@@ -1,10 +1,10 @@
 use crate::{
+    common::math::Interval,
     hittable::{HitRecord, Hittable},
-    interval::Interval,
     ray::Ray,
 };
 
-// Our world is just a list of Hittable objects
+/// Models our little raytracing world - which is just a list of Hittable objects
 #[derive(Default)]
 pub struct World {
     objects: Vec<Box<dyn Hittable>>,

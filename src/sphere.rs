@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use crate::{
+    common::math::Interval,
     hittable::{HitRecord, Hittable},
-    interval::Interval,
     material::Material,
     ray::Ray,
     vec3::Point3,
