@@ -1,3 +1,5 @@
+use std::f32::EPSILON;
+
 use crate::common::{random, random_in_range};
 
 /// A three-dimensional vector of floats used to represent colors, coordinates, etc
@@ -35,8 +37,8 @@ impl Vec3 {
         }
     }
 
-    /// Generates a unit vector (i.e lies on the unit sphere) that points towards the normal
-    /// direction
+    /// Generates a unit vector (i.e lies on the unit sphere) that is contained in the same
+    /// hemisphere as the normal
     pub fn random_on_hemisphere(normal: Vec3) -> Self {
         let unit_random_vec = Vec3::in_unit_sphere().into_unit();
         if normal.dot(unit_random_vec) > 0.0 {
@@ -82,6 +84,16 @@ impl Vec3 {
 
     pub fn reduce(self, f: impl Fn(f64, f64) -> f64) -> f64 {
         f(f(self.0, self.1), self.2)
+    }
+
+    /// Returns true if the vector is close to zero in all dimensions, false otherwise
+    pub fn is_near_zero(&self) -> bool {
+        const EPSILON: f64 = 1.0e-8;
+        self.0.abs() < EPSILON && self.1.abs() < EPSILON && self.2.abs() < EPSILON
+    }
+
+    pub fn reflect(&self, normal: Vec3) -> Self {
+        *self - 2.0 * self.dot(normal) * normal
     }
 }
 

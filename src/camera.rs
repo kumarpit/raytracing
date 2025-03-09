@@ -105,8 +105,18 @@ impl Camera {
         }
 
         if obj.hit(&ray, ANTI_SHADOW_ACNE_HIT_INTERVAL, &mut rec) {
-            let direction = Vec3::random_on_hemisphere(rec.normal);
-            0.5 * self.ray_color(&Ray::new(rec.point, direction), obj, depth - 1)
+            let mut attenuation = Color::default();
+            let mut scattered = Ray::default();
+            if rec
+                .material
+                .as_ref()
+                .unwrap()
+                .scatter(ray, &rec, &mut attenuation, &mut scattered)
+            {
+                attenuation * self.ray_color(&scattered, obj, depth - 1)
+            } else {
+                Color::from(0.0)
+            }
         } else {
             // Generates a blue-to-white gradient background
             let unit_direction = ray.direction().into_unit();

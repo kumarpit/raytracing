@@ -1,5 +1,8 @@
+use std::rc::Rc;
+
 use crate::{
     interval::Interval,
+    material::Material,
     ray::Ray,
     vec3::{Point3, Vec3},
 };
@@ -12,6 +15,7 @@ use crate::{
 pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,
+    pub material: Option<Rc<dyn Material>>,
     pub t: f64,
     pub did_hit_front_frace: bool,
 }
