@@ -4,7 +4,7 @@ use crate::{
     color::{write_color, Color},
     common::{lerp, random, INFINITY},
     hittable::{HitRecord, Hittable},
-    interval::{Interval, ANTI_SHADOW_ACNE_HIT_INTERVAL, EMPTY_INTERVAL},
+    interval::{Interval, ANTI_SHADOW_ACNE_HIT_INTERVAL, EMPTY_INTERVAL, POSITIVE_INTERVAL},
     ray::Ray,
     vec3::{Point3, Vec3},
     world::World,
@@ -66,8 +66,8 @@ impl Camera {
             pixel_upper_left,
             pixel_delta_u,
             pixel_delta_v,
-            samples_per_pixel: 10,
-            max_depth: 10,
+            samples_per_pixel: 100,
+            max_depth: 100,
         }
     }
 
@@ -84,6 +84,7 @@ impl Camera {
 
         writeln!(out, "P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).expect("writing header");
         for j in 0..IMAGE_HEIGHT {
+            eprint!("\rRendering progress: {} / {}", j, IMAGE_HEIGHT);
             for i in 0..IMAGE_WIDTH {
                 let mut pixel_color = Color::from(0.0);
                 // Anti-aliasing
@@ -98,6 +99,11 @@ impl Camera {
 
     fn ray_color<T: Hittable>(&self, ray: &Ray, obj: &T, depth: i32) -> Color {
         let mut rec: HitRecord = HitRecord::new();
+
+        if depth <= 0 {
+            return Color::from(0.0);
+        }
+
         if obj.hit(&ray, ANTI_SHADOW_ACNE_HIT_INTERVAL, &mut rec) {
             let direction = Vec3::random_on_hemisphere(rec.normal);
             0.5 * self.ray_color(&Ray::new(rec.point, direction), obj, depth - 1)

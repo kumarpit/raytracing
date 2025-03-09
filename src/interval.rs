@@ -55,6 +55,6 @@ pub const NEGATIVE_INTERVAL: Interval = Interval {
 };
 
 pub const ANTI_SHADOW_ACNE_HIT_INTERVAL: Interval = Interval {
-    min: 0.001,
+    min: 0.001, // TODO: Figure out why setting this to 0.001 leads to a stack overflow
     max: INFINITY,
 };

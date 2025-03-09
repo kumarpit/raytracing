@@ -33,7 +33,6 @@ impl Hittable for Sphere {
 
         // Find the nearest root that lies in the given range
         let mut root = (h - sqrt_d) / a;
-
         if !interval.surrounds(root) {
             root = (h + sqrt_d) / a;
             if !interval.surrounds(root) {
