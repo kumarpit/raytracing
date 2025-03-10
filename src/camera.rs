@@ -101,20 +101,16 @@ impl Camera {
     }
 
     fn ray_color<T: Hittable>(&self, ray: &Ray, obj: &T, depth: i32) -> Color {
-        let mut rec: HitRecord = HitRecord::new();
-
         if depth <= 0 {
             return Color::from(0.0);
         }
 
         // Having the interval start at 0.001 helps resolve "shadow acne"
-        if obj.hit(&ray, Interval::new(0.001, INFINITY), &mut rec) {
+        if let Some(rec) = obj.hit(&ray, Interval::new(0.001, INFINITY)) {
             let mut attenuation = Color::default();
             let mut scattered = Ray::default();
             if rec
                 .material
-                .as_ref()
-                .unwrap()
                 .scatter(ray, &rec, &mut attenuation, &mut scattered)
             {
                 attenuation * self.ray_color(&scattered, obj, depth - 1)

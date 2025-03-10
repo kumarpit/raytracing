@@ -34,10 +34,15 @@ impl Vec3 {
         }
     }
 
+    /// Generates some random vector that lies on the unit sphere (i.e has unit length)
+    pub fn on_unit_sphere() -> Self {
+        Vec3::in_unit_sphere().into_unit()
+    }
+
     /// Generates a unit vector (i.e lies on the unit sphere) that is contained in the same
     /// hemisphere as the normal
     pub fn random_on_hemisphere(normal: Vec3) -> Self {
-        let unit_random_vec = Vec3::in_unit_sphere().into_unit();
+        let unit_random_vec = Vec3::on_unit_sphere();
         if normal.dot(unit_random_vec) > 0.0 {
             unit_random_vec
         } else {

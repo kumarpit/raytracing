@@ -21,23 +21,17 @@ impl World {
 }
 
 impl Hittable for World {
-    fn hit(&self, ray: &Ray, interval: Interval, record: &mut HitRecord) -> bool {
-        let mut temp_record = HitRecord::new();
-        let mut did_hit_something = false;
+    fn hit(&self, ray: &Ray, interval: Interval) -> Option<HitRecord> {
+        let mut temp_record = None;
         let mut closest_so_far = interval.max();
 
         for object in &self.objects {
-            if object.hit(
-                ray,
-                Interval::new(interval.min(), closest_so_far),
-                &mut temp_record,
-            ) {
-                did_hit_something = true;
-                closest_so_far = temp_record.t;
-                *record = temp_record.clone();
+            if let Some(rec) = object.hit(ray, Interval::new(interval.min(), closest_so_far)) {
+                closest_so_far = rec.t;
+                temp_record = Some(rec);
             }
         }
 
-        did_hit_something
+        temp_record
     }
 }

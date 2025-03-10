@@ -11,20 +11,15 @@ use crate::{
 /// of the ray. This is purely for efficiency, since we have more material types than
 /// geometry types - thus it is less work to determine which face the ray hit during
 /// geometry intersection.
-#[derive(Clone, Default)]
 pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,
-    pub material: Option<Rc<dyn Material>>,
+    pub material: Rc<dyn Material>,
     pub t: f64,
     pub did_hit_front_frace: bool,
 }
 
 impl HitRecord {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
     /// Assumes outward_normal is of unit length
     pub fn set_face_normal(&mut self, ray: &Ray, outward_normal: Vec3) {
         self.did_hit_front_frace = ray.direction().dot(outward_normal) < 0.0;
@@ -37,5 +32,5 @@ impl HitRecord {
 }
 
 pub trait Hittable {
-    fn hit(&self, ray: &Ray, interval: Interval, record: &mut HitRecord) -> bool;
+    fn hit(&self, ray: &Ray, interval: Interval) -> Option<HitRecord>;
 }

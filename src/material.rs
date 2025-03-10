@@ -1,4 +1,4 @@
-use crate::{color::Color, hittable::HitRecord, ray::Ray, vec3::Vec3};
+use crate::{color::Color, common::math::clamp, hittable::HitRecord, ray::Ray, vec3::Vec3};
 
 pub trait Material {
     fn scatter(
@@ -54,17 +54,24 @@ impl Material for Lambertian {
 //
 // Metal Material
 //
-// Shiny, shiny metals! Scattered rays are perfectly reflected about the surface normal.
+// Shiny, shiny metals! Scattered rays are perfectly reflected about the surface normal. Also
+// includes a "fuzzy" parameter that achieves a fuzzy appearance by altering the endpoint of the
+// reflected ray. The length of this alteration is determined by the fuzz factor.
 //
 // ============================================
+//
 
 pub struct Metal {
     albedo: Color,
+    fuzz: f64,
 }
 
 impl Metal {
-    pub fn new(albedo: Color) -> Self {
-        Metal { albedo }
+    pub fn new(albedo: Color, fuzz: f64) -> Self {
+        Metal {
+            albedo,
+            fuzz: clamp(0.0, 1.0, fuzz),
+        }
     }
 }
 
@@ -76,9 +83,10 @@ impl Material for Metal {
         attenuation: &mut Color,
         scattered: &mut Ray,
     ) -> bool {
-        let reflected = ray.direction().into_unit().reflect(rec.normal);
+        let reflected = ray.direction().into_unit().reflect(rec.normal).into_unit()
+            + self.fuzz * Vec3::on_unit_sphere();
         *attenuation = self.albedo;
         *scattered = Ray::new(rec.point, reflected);
-        true
+        scattered.direction().dot(rec.normal) > 0.0
     }
 }
