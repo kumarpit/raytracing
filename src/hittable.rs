@@ -10,7 +10,7 @@ use crate::{
 /// We follow the convention that the `normal` always points in the opposite direction
 /// of the ray. This is purely for efficiency, since we have more material types than
 /// geometry types - thus it is less work to determine which face the ray hit during
-/// geometry intersection.
+/// geometry intersection. Note that the normal should always be a unit vector.
 pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,

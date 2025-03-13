@@ -1,4 +1,10 @@
-use crate::{color::Color, common::math::clamp, hittable::HitRecord, ray::Ray, vec3::Vec3};
+use crate::{
+    color::Color,
+    common::math::{clamp, random},
+    hittable::HitRecord,
+    ray::Ray,
+    vec3::Vec3,
+};
 
 pub trait Material {
     fn scatter(
@@ -101,12 +107,29 @@ impl Material for Metal {
 //
 
 pub struct Dielectric {
+    /// This is really the "context-aware" refractive index of the object. Meaning that it should
+    /// used as the ratio of the refractive index of the object divided by the refractive index of
+    /// the enclosing medium. In most cases the enclosing medium is air (i.e refractive index of
+    /// 1.0), but if you have embedded objects, you need to be careful to divide by the
+    ///   appropriate refractive index.
     refractive_index: f64,
 }
 
 impl Dielectric {
     pub fn new(refractive_index: f64) -> Self {
         Dielectric { refractive_index }
+    }
+
+    fn check_can_refract(cos_theta: f64, etai: f64, etat: f64) -> bool {
+        let etai_over_etat = etai / etat;
+        let sin_theta = (1.0 - cos_theta.powi(2)).sqrt();
+        etai_over_etat * sin_theta <= 1.0
+    }
+
+    fn reflectance(&self, cos_theta: f64) -> f64 {
+        // Using Schlick's approximation for reflectance
+        let r0 = ((1.0 - self.refractive_index) / (1.0 + self.refractive_index)).powi(2);
+        r0 + (1.0 - r0) * (1.0 - cos_theta).powi(5)
     }
 }
 
@@ -120,20 +143,26 @@ impl Material for Dielectric {
     ) -> bool {
         *attenuation = Color::from(1.0);
 
-        let etai;
-        let etat;
-        if rec.did_hit_front_frace {
-            etai = 1.0;
-            etat = self.refractive_index;
+        let (etai, etat) = if rec.did_hit_front_frace {
+            // The ray is going from the environment _into_ this object
+            (1.0, self.refractive_index)
         } else {
-            etai = self.refractive_index;
-            etat = 1.0;
+            // The ray is emerging from _within_ the object into the environment
+            (self.refractive_index, 1.0)
         };
-        let refracted = ray
-            .direction()
-            .into_unit()
-            .refract(rec.normal.into_unit(), etai, etat);
-        *scattered = Ray::new(rec.point, refracted);
+
+        let cos_theta = -ray.direction().into_unit().dot(rec.normal).min(1.0);
+        let direction = if Dielectric::check_can_refract(cos_theta, etai, etat)
+            && self.reflectance(cos_theta) <= random()
+        {
+            ray.direction()
+                .into_unit()
+                .refract(rec.normal.into_unit(), etai, etat)
+        } else {
+            ray.direction().into_unit().reflect(rec.normal)
+        };
+
+        *scattered = Ray::new(rec.point, direction);
         true
     }
 }
