@@ -1,6 +1,7 @@
 mod camera;
 mod color;
 mod common;
+mod config;
 mod hittable;
 mod material;
 mod ray;
@@ -59,6 +60,7 @@ fn main() {
         material_right,
     )));
 
-    let camera = Camera::new();
+    let camera_config = config::CameraConfig::new();
+    let camera = Camera::new(&camera_config);
     camera.render(&world, &mut file);
 }
