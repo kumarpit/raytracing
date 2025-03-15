@@ -184,16 +184,13 @@ impl Camera {
 
         // Having the interval start at 0.001 helps resolve "shadow acne"
         if let Some(rec) = obj.hit(&ray, Interval::new(0.001, INFINITY)) {
-            let mut attenuation = Color::default();
-            let mut scattered = Ray::default();
-            if rec
-                .material
-                .scatter(ray, &rec, &mut attenuation, &mut scattered)
-            {
-                attenuation * self.ray_color(&scattered, obj, depth - 1)
-            } else {
-                Color::from(0.0)
-            }
+            rec.material
+                .scatter(ray, &rec)
+                .map(|scatter_record| {
+                    scatter_record.attenuation
+                        * self.ray_color(&scatter_record.scattered, obj, depth - 1)
+                })
+                .unwrap_or_else(|| Color::from(0.0))
         } else {
             // Generates a blue-to-white gradient background
             let unit_direction = ray.direction().into_unit();
