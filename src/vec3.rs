@@ -34,6 +34,17 @@ impl Vec3 {
         }
     }
 
+    /// Generates a vector that lies within the unit disc (i.e has length < 1 and lies in the x-y
+    /// plane)
+    pub fn in_unit_disc() -> Self {
+        loop {
+            let candidate = Vec3::new(random_in_range(-1.0, 1.0), random_in_range(-1.0, 1.0), 0.0);
+            if candidate.length_squared() < 1.0 {
+                return candidate;
+            }
+        }
+    }
+
     /// Generates some random vector that lies on the unit sphere (i.e has unit length)
     pub fn on_unit_sphere() -> Self {
         Vec3::in_unit_sphere().into_unit()

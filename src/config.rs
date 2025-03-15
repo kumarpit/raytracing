@@ -12,6 +12,8 @@ pub struct CameraConfig {
     pub samples_per_pixel: i32,
     pub max_ray_bounces: i32,
     pub vertical_field_of_view: i32,
+    pub defocus_angle: i32,
+    pub focus_distance: f64,
 }
 
 #[derive(Debug, Deserialize)]

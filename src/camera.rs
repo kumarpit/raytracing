@@ -45,10 +45,9 @@ impl ViewportProperties {
         let vup = Point3::from(config.vup.clone());
 
         // Determine the viewport dimensions
-        let focal_length = (lookfrom - lookat).length();
         let theta = deg_to_rad(config.vertical_field_of_view as f64) / 2.0;
         let h = theta.tan();
-        let viewport_height = 2.0 * h * focal_length;
+        let viewport_height = 2.0 * h * config.focus_distance;
         // Not using ASPECT_RATIO directly here since it may not be the _actual_ ratio between the
         // the image dimensions given that they are not real-valued.
         let viewport_width =
@@ -63,8 +62,10 @@ impl ViewportProperties {
         let viewport_horizontal = viewport_width * u; // vector across viewport horizontal
                                                       // edge
         let viewport_vertical = viewport_height * -v; // vector _down_ viewport vertical edge
-        let viewport_upper_left =
-            center - (focal_length * w) - viewport_horizontal / 2.0 - viewport_vertical / 2.0;
+        let viewport_upper_left = center
+            - (config.focus_distance * w)
+            - viewport_horizontal / 2.0
+            - viewport_vertical / 2.0;
 
         let pixel_delta_u = viewport_horizontal / image_properties.width as f64;
         let pixel_delta_v = viewport_vertical / image_properties.height as f64;
@@ -82,6 +83,9 @@ impl ViewportProperties {
 
 pub struct Camera {
     center: Point3,
+    defocus_angle: i32,
+    defocus_disc_u: Vec3,
+    defocus_disc_v: Vec3,
     samples_per_pixel: i32,
     max_ray_bounces: i32,
     image_properties: ImageProperties,
@@ -93,8 +97,28 @@ impl Camera {
         let image_properties = ImageProperties::new(config);
         let viewport_properties = ViewportProperties::new(config, &image_properties);
 
+        // Calculate the u, v, w unit basis vectors for the camera coordinate frame
+        // TODO: figure out a way to reduce duplicated code between here and viewport properties
+        // initialization
+        let lookfrom = Point3::from(config.lookfrom.clone());
+        let lookat = Point3::from(config.lookat.clone());
+        let vup = Point3::from(config.vup.clone());
+
+        let w = (lookfrom - lookat).into_unit();
+        let u = vup.cross(&w).into_unit();
+        let v = w.cross(&u);
+
+        // Calculate the camera defocus disc basis vectors
+        let defocus_radius =
+            config.focus_distance * deg_to_rad(config.defocus_angle as f64 / 2.0).tan();
+        let defocus_disc_u = u * defocus_radius;
+        let defocus_disc_v = v * defocus_radius;
+
         Camera {
             center: Point3::from(config.lookfrom.clone()),
+            defocus_angle: config.defocus_angle,
+            defocus_disc_u,
+            defocus_disc_v,
             samples_per_pixel: config.samples_per_pixel,
             max_ray_bounces: config.max_ray_bounces,
             image_properties,
@@ -164,11 +188,24 @@ impl Camera {
         }
     }
 
+    /// Constructs a ray originating from the defocus disc and directed at a randomly sampled point
+    /// around the pixel location (i, j)
     fn get_ray(&self, i: i32, j: i32) -> Ray {
         let offset = Vec3(random() - 0.5, random() - 0.5, 0.0);
         let pixel_sample = self.viewport_properties.pixel_upper_left
             + ((i as f64 + offset.0) * self.viewport_properties.pixel_delta_u)
             + ((j as f64 + offset.1) * self.viewport_properties.pixel_delta_v);
-        Ray::new(self.center, pixel_sample - self.center)
+        let ray_origin = if self.defocus_angle <= 0 {
+            self.center
+        } else {
+            self.defocus_disc_sample()
+        };
+        Ray::new(ray_origin, pixel_sample - ray_origin)
+    }
+
+    /// Returns a random point in the camera defocus disc
+    fn defocus_disc_sample(&self) -> Point3 {
+        let p = Vec3::in_unit_disc();
+        self.center + (p.0 * self.defocus_disc_u) + (p.1 * self.defocus_disc_v)
     }
 }
