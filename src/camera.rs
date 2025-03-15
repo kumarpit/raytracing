@@ -45,7 +45,7 @@ impl ViewportProperties {
         let vup = Point3::from(config.vup.clone());
 
         // Determine the viewport dimensions
-        let theta = deg_to_rad(config.vertical_field_of_view as f64) / 2.0;
+        let theta = deg_to_rad(config.vertical_field_of_view) / 2.0;
         let h = theta.tan();
         let viewport_height = 2.0 * h * config.focus_distance;
         // Not using ASPECT_RATIO directly here since it may not be the _actual_ ratio between the
@@ -83,7 +83,7 @@ impl ViewportProperties {
 
 pub struct Camera {
     center: Point3,
-    defocus_angle: i32,
+    defocus_angle: f64,
     defocus_disc_u: Vec3,
     defocus_disc_v: Vec3,
     samples_per_pixel: i32,
@@ -116,7 +116,7 @@ impl Camera {
 
         Camera {
             center: Point3::from(config.lookfrom.clone()),
-            defocus_angle: config.defocus_angle,
+            defocus_angle: config.defocus_angle as f64,
             defocus_disc_u,
             defocus_disc_v,
             samples_per_pixel: config.samples_per_pixel,
@@ -195,7 +195,7 @@ impl Camera {
         let pixel_sample = self.viewport_properties.pixel_upper_left
             + ((i as f64 + offset.0) * self.viewport_properties.pixel_delta_u)
             + ((j as f64 + offset.1) * self.viewport_properties.pixel_delta_v);
-        let ray_origin = if self.defocus_angle <= 0 {
+        let ray_origin = if self.defocus_angle <= 0.0 {
             self.center
         } else {
             self.defocus_disc_sample()
