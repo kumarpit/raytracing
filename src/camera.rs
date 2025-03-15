@@ -1,3 +1,4 @@
+use indicatif::{ProgressBar, ProgressStyle};
 use std::io::Write;
 
 use crate::{
@@ -40,10 +41,6 @@ struct ViewportProperties {
 
 impl ViewportProperties {
     fn new(config: &CameraConfig, image_properties: &ImageProperties) -> Self {
-        let lookfrom = Point3::from(config.lookfrom.clone());
-        let lookat = Point3::from(config.lookat.clone());
-        let vup = Point3::from(config.vup.clone());
-
         // Determine the viewport dimensions
         let theta = deg_to_rad(config.vertical_field_of_view) / 2.0;
         let h = theta.tan();
@@ -53,10 +50,7 @@ impl ViewportProperties {
         let viewport_width =
             viewport_height * (image_properties.width as f64 / image_properties.height as f64);
 
-        // Calculate the u, v, w unit basis vectors for the camera coordinate frame
-        let w = (lookfrom - lookat).into_unit();
-        let u = vup.cross(&w).into_unit();
-        let v = w.cross(&u);
+        let (u, v, w) = Camera::get_basis_vectors(config);
 
         let center = Point3::from(config.lookfrom.clone());
         let viewport_horizontal = viewport_width * u; // vector across viewport horizontal
@@ -97,16 +91,7 @@ impl Camera {
         let image_properties = ImageProperties::new(config);
         let viewport_properties = ViewportProperties::new(config, &image_properties);
 
-        // Calculate the u, v, w unit basis vectors for the camera coordinate frame
-        // TODO: figure out a way to reduce duplicated code between here and viewport properties
-        // initialization
-        let lookfrom = Point3::from(config.lookfrom.clone());
-        let lookat = Point3::from(config.lookat.clone());
-        let vup = Point3::from(config.vup.clone());
-
-        let w = (lookfrom - lookat).into_unit();
-        let u = vup.cross(&w).into_unit();
-        let v = w.cross(&u);
+        let (u, v, _) = Camera::get_basis_vectors(config);
 
         // Calculate the camera defocus disc basis vectors
         let defocus_radius =
@@ -132,11 +117,11 @@ impl Camera {
         }
 
         println!(
-            "Image dimensions: {} ✕ {}",
+            "Image Dimensions: {} ✕ {}",
             self.image_properties.width, self.image_properties.height
         );
         println!(
-            "Viewport dimensions: {} ✕ {}",
+            "Viewport Dimensions: {:.1} ✕ {:.1}",
             self.viewport_properties.width, self.viewport_properties.height
         );
 
@@ -146,11 +131,18 @@ impl Camera {
             self.image_properties.width, self.image_properties.height
         )
         .expect("writing header");
+
+        // More elegant progress bar than just eprintin'
+        let bar = ProgressBar::new(self.image_properties.height as u64);
+        bar.set_style(
+            ProgressStyle::default_bar()
+                .template("{msg} [{wide_bar}] {pos}/{len} rows")
+                .unwrap()
+                .progress_chars("#>-"),
+        );
+        bar.set_message("Rendering");
+
         for j in 0..self.image_properties.height {
-            eprint!(
-                "\rRendering progress: {} / {}",
-                j, self.image_properties.height
-            );
             for i in 0..self.image_properties.width {
                 let mut pixel_color = Color::from(0.0);
                 // Anti-aliasing
@@ -160,7 +152,21 @@ impl Camera {
                 });
                 write_color(out, pixel_color / self.samples_per_pixel as f64);
             }
+            bar.inc(1);
         }
+    }
+
+    /// Computes the basis vectors for the camera's orientation
+    fn get_basis_vectors(config: &CameraConfig) -> (Vec3, Vec3, Vec3) {
+        let lookfrom = Point3::from(config.lookfrom.clone());
+        let lookat = Point3::from(config.lookat.clone());
+        let vup = Point3::from(config.vup.clone());
+
+        let w = (lookfrom - lookat).into_unit();
+        let u = vup.cross(&w).into_unit();
+        let v = w.cross(&u);
+
+        (u, v, w)
     }
 
     fn ray_color<T: Hittable>(&self, ray: &Ray, obj: &T, depth: i32) -> Color {
