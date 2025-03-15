@@ -14,7 +14,7 @@ use color::Color;
 use common::math::{random, random_in_range};
 use material::{Dielectric, Lambertian, Metal};
 use sphere::Sphere;
-use std::{fs::OpenOptions, rc::Rc};
+use std::{fs::OpenOptions, sync::Arc};
 use vec3::Point3;
 use world::World;
 
@@ -32,7 +32,7 @@ fn main() {
 
     let mut world = World::new();
 
-    let ground_material = Rc::new(Lambertian::new(Color::from(0.5)));
+    let ground_material = Arc::new(Lambertian::new(Color::from(0.5)));
     world.add(Box::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
@@ -48,37 +48,37 @@ fn main() {
                 if choose_material < 0.8 {
                     // Diffuse material
                     let albedo = Color::random() * Color::random();
-                    let sphere_material = Rc::new(Lambertian::new(albedo));
+                    let sphere_material = Arc::new(Lambertian::new(albedo));
                     world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
                 } else if choose_material < 0.95 {
                     // Metal material
                     let albedo = Color::random_in_range(0.5, 1.0);
                     let fuzz = random_in_range(0.0, 0.5);
-                    let sphere_material = Rc::new(Metal::new(albedo, fuzz));
+                    let sphere_material = Arc::new(Metal::new(albedo, fuzz));
                     world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
                 } else {
-                    let sphere_material = Rc::new(Dielectric::new(1.5));
+                    let sphere_material = Arc::new(Dielectric::new(1.5));
                     world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
                 }
             }
         }
     }
 
-    let material_1 = Rc::new(Dielectric::new(1.5));
+    let material_1 = Arc::new(Dielectric::new(1.5));
     world.add(Box::new(Sphere::new(
         Point3::new(0.0, 1.0, 0.0),
         1.0,
         material_1,
     )));
 
-    let material_2 = Rc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
+    let material_2 = Arc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
     world.add(Box::new(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
         material_2,
     )));
 
-    let material_3 = Rc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
+    let material_3 = Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
     world.add(Box::new(Sphere::new(
         Point3::new(4.0, 1.0, 0.0),
         1.0,

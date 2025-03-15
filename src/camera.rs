@@ -1,4 +1,5 @@
 use indicatif::{ProgressBar, ProgressStyle};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::io::Write;
 
 use crate::{
@@ -143,16 +144,23 @@ impl Camera {
         bar.set_message("Rendering");
 
         for j in 0..self.image_properties.height {
-            for i in 0..self.image_properties.width {
-                let mut pixel_color = Color::from(0.0);
-                // Anti-aliasing
-                (0..self.samples_per_pixel).for_each(|_| {
-                    let ray = self.get_ray(i, j);
-                    pixel_color = pixel_color + self.ray_color(&ray, world, self.max_ray_bounces);
-                });
+            bar.inc(1);
+            let pixel_colors: Vec<Color> = (0..self.image_properties.width)
+                .into_par_iter()
+                .map(|i| {
+                    let mut pixel_color = Color::from(0.0);
+                    // Anti-aliasing
+                    (0..self.samples_per_pixel).for_each(|_| {
+                        let ray = self.get_ray(i, j);
+                        pixel_color =
+                            pixel_color + self.ray_color(&ray, world, self.max_ray_bounces);
+                    });
+                    pixel_color
+                })
+                .collect();
+            for pixel_color in pixel_colors {
                 write_color(out, pixel_color / self.samples_per_pixel as f64);
             }
-            bar.inc(1);
         }
     }
 
