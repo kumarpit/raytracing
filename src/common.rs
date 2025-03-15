@@ -10,7 +10,7 @@ pub mod math {
     use rand::Rng;
     #[inline]
     pub fn deg_to_rad(deg: f64) -> f64 {
-        deg * PI / 180.0
+        deg * (PI / 180.0)
     }
 
     /// Linear Interpolation

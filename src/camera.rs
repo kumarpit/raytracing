@@ -2,7 +2,7 @@ use std::io::Write;
 
 use crate::{
     color::{write_color, Color},
-    common::math::{lerp, random, Interval, INFINITY},
+    common::math::{deg_to_rad, lerp, random, Interval, INFINITY},
     config::CameraConfig,
     hittable::Hittable,
     ray::Ray,
@@ -11,9 +11,8 @@ use crate::{
 };
 
 struct ImageProperties {
-    aspect_ratio: f64,
-    image_width: i32,
-    image_height: i32,
+    width: i32,
+    height: i32,
 }
 
 impl ImageProperties {
@@ -21,43 +20,59 @@ impl ImageProperties {
         let aspect_ratio = config.aspect_ratio[0] / config.aspect_ratio[1];
         let image_height = ((config.image_width as f64) / aspect_ratio) as i32;
         ImageProperties {
-            aspect_ratio,
-            image_width: config.image_width,
-            image_height,
+            width: config.image_width,
+            height: image_height,
         }
     }
 }
 
 struct ViewportProperties {
-    viewport_width: f64,
-    viewport_height: f64,
-    pixel_upper_left: Point3,
-    pixel_delta_u: Vec3,
-    pixel_delta_v: Vec3,
+    width: f64,
+    height: f64,
+    pixel_upper_left: Point3, // Position of the upper left pixel in the viewport (notice that it
+    // is slightly inset from true top-left corner since we store the
+    // center of each pixel)
+    pixel_delta_u: Vec3, // Vector representing the distance between successive columns of pixels
+    // in the viewport
+    pixel_delta_v: Vec3, // Vector representing teh distance between successive rows of pixels in
+                         // the viewport
 }
 
 impl ViewportProperties {
     fn new(config: &CameraConfig, image_properties: &ImageProperties) -> Self {
-        let viewport_height = config.viewport_height;
+        let lookfrom = Point3::from(config.lookfrom.clone());
+        let lookat = Point3::from(config.lookat.clone());
+        let vup = Point3::from(config.vup.clone());
+
+        // Determine the viewport dimensions
+        let focal_length = (lookfrom - lookat).length();
+        let theta = deg_to_rad(config.vertical_field_of_view as f64) / 2.0;
+        let h = theta.tan();
+        let viewport_height = 2.0 * h * focal_length;
         // Not using ASPECT_RATIO directly here since it may not be the _actual_ ratio between the
         // the image dimensions given that they are not real-valued.
-        let viewport_width = viewport_height
-            * (image_properties.image_width as f64 / image_properties.image_height as f64);
-        let center = Point3::from(0.0);
-        let viewport_horizontal = Vec3::new(viewport_width, 0.0, 0.0);
-        let viewport_vertical = Vec3::new(0.0, -viewport_height, 0.0);
-        let viewport_upper_left = center
-            - Vec3::new(0.0, 0.0, config.focal_length)
-            - viewport_horizontal / 2.0
-            - viewport_vertical / 2.0;
+        let viewport_width =
+            viewport_height * (image_properties.width as f64 / image_properties.height as f64);
 
-        let pixel_delta_u = viewport_horizontal / config.image_width as f64;
-        let pixel_delta_v = viewport_vertical / image_properties.image_height as f64;
+        // Calculate the u, v, w unit basis vectors for the camera coordinate frame
+        let w = (lookfrom - lookat).into_unit();
+        let u = vup.cross(&w).into_unit();
+        let v = w.cross(&u);
+
+        let center = Point3::from(config.lookfrom.clone());
+        let viewport_horizontal = viewport_width * u; // vector across viewport horizontal
+                                                      // edge
+        let viewport_vertical = viewport_height * -v; // vector _down_ viewport vertical edge
+        let viewport_upper_left =
+            center - (focal_length * w) - viewport_horizontal / 2.0 - viewport_vertical / 2.0;
+
+        let pixel_delta_u = viewport_horizontal / image_properties.width as f64;
+        let pixel_delta_v = viewport_vertical / image_properties.height as f64;
         let pixel_upper_left = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
         ViewportProperties {
-            viewport_width,
-            viewport_height,
+            width: viewport_width,
+            height: viewport_height,
             pixel_upper_left,
             pixel_delta_u,
             pixel_delta_v,
@@ -67,7 +82,6 @@ impl ViewportProperties {
 
 pub struct Camera {
     center: Point3,
-    focal_length: f64,
     samples_per_pixel: i32,
     max_ray_bounces: i32,
     image_properties: ImageProperties,
@@ -78,9 +92,9 @@ impl Camera {
     pub fn new(config: &CameraConfig) -> Self {
         let image_properties = ImageProperties::new(config);
         let viewport_properties = ViewportProperties::new(config, &image_properties);
+
         Camera {
-            center: Point3::from(0.0),
-            focal_length: config.focal_length,
+            center: Point3::from(config.lookfrom.clone()),
             samples_per_pixel: config.samples_per_pixel,
             max_ray_bounces: config.max_ray_bounces,
             image_properties,
@@ -89,31 +103,31 @@ impl Camera {
     }
 
     pub fn render(&self, world: &World, out: &mut impl Write) {
-        if self.image_properties.image_height < 1 {
+        if self.image_properties.height < 1 {
             panic!("IMAGE_HEIGHT is way too small, use a larger width");
         }
 
         println!(
             "Image dimensions: {} ✕ {}",
-            self.image_properties.image_width, self.image_properties.image_height
+            self.image_properties.width, self.image_properties.height
         );
         println!(
             "Viewport dimensions: {} ✕ {}",
-            self.viewport_properties.viewport_width, self.viewport_properties.viewport_height
+            self.viewport_properties.width, self.viewport_properties.height
         );
 
         writeln!(
             out,
             "P3\n{} {}\n255\n",
-            self.image_properties.image_width, self.image_properties.image_height
+            self.image_properties.width, self.image_properties.height
         )
         .expect("writing header");
-        for j in 0..self.image_properties.image_height {
+        for j in 0..self.image_properties.height {
             eprint!(
                 "\rRendering progress: {} / {}",
-                j, self.image_properties.image_height
+                j, self.image_properties.height
             );
-            for i in 0..self.image_properties.image_width {
+            for i in 0..self.image_properties.width {
                 let mut pixel_color = Color::from(0.0);
                 // Anti-aliasing
                 (0..self.samples_per_pixel).for_each(|_| {

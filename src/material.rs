@@ -6,6 +6,7 @@ use crate::{
     vec3::Vec3,
 };
 
+// TODO: make this an enum to eliminate dynamic dispatch
 pub trait Material {
     fn scatter(
         &self,

@@ -1,8 +1,12 @@
+[camera]
 aspect_ratio = [16.0, 9.0] # [width, height]
 image_width = 400 # image_height is determined dynamically by the width and aspect ratio
-viewport_height = 2.0 # similarly, viewport width is determined dynamically from the aspect ratio
-focal_length = 1.0 # distance between the camera and the viewport
+lookfrom = [-2.0, 2.0, 1.0] # camera position
+lookat = [0.0, 0.0, -1.0] # point at which the camera faces
+vup = [0.0, 1.0, 0.0] # camera up vector (specifies the camera tilt)
 samples_per_pixel = 100 # number of rays used to determine the color value for a pixel
 max_ray_bounces = 100  # maximum number of reflections for any ray
-vertical_field_of_view = 90
-# TODO: need to add camera center here
+vertical_field_of_view = 90 # (in degrees) used to determine viewport height 
+
+[out]
+file = "./image.ppm" # path to the output file

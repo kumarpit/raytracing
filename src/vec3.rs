@@ -119,6 +119,13 @@ impl From<f64> for Vec3 {
     }
 }
 
+/// Constructs a Vec3 from a Vec of f64
+impl From<Vec<f64>> for Vec3 {
+    fn from(v: Vec<f64>) -> Self {
+        Vec3(v[0], v[1], v[2])
+    }
+}
+
 /// Vec3 * Vec3
 impl std::ops::Mul for Vec3 {
     type Output = Vec3;
