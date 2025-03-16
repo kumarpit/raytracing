@@ -11,11 +11,11 @@ use crate::{
 pub struct Sphere {
     center: Point3,
     radius: f64,
-    material: Arc<dyn Material>,
+    material: Arc<Material>,
 }
 
 impl Sphere {
-    pub fn new(center: Point3, radius: f64, material: Arc<dyn Material>) -> Self {
+    pub fn new(center: Point3, radius: f64, material: Arc<Material>) -> Self {
         Sphere {
             center,
             radius,

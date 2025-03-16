@@ -14,7 +14,7 @@ use crate::{
 pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,
-    pub material: Arc<dyn Material>,
+    pub material: Arc<Material>,
     pub t: f64,
     pub did_hit_front_frace: bool,
 }
