@@ -1,44 +1,22 @@
 use crate::{color::Color, common::math::random, hittable::HitRecord, ray::Ray, vec3::Vec3};
 
+/// Represents the various material options of a rendered object
 pub enum Material {
-    // ============================================
-    //
-    // Lambertian Material
-    //
-    // The Lambertian material models "diffuse" objects - such objects have a matte appearance. This is
-    // achieved by having the scattered rays follow the Lambertian distribution wherein the reflected
-    // rays scatter in a direction near the surface normal. Another (more simplistic) approach to
-    // achieving a diffuse object is to have the refelcted rays randomly scatter in the hemisphere
-    // containing the surface normal - though these give less realistic results.
-    //
-    // ============================================
-    Lambertian {
-        albedo: Color,
-    },
+    /// The Lambertian material models "diffuse" objects - such objects have a matte appearance. This is
+    /// achieved by having the scattered rays follow the Lambertian distribution wherein the reflected
+    /// rays scatter in a direction near the surface normal. Another (more simplistic) approach to
+    /// achieving a diffuse object is to have the refelcted rays randomly scatter in the hemisphere
+    /// containing the surface normal - though these give less realistic results.
+    Lambertian { albedo: Color },
 
-    // ============================================
-    //
-    // Metal Material
-    //
-    // Shiny, shiny metals! Scattered rays are perfectly reflected about the surface normal. Also
-    // includes a "fuzzy" parameter that achieves a fuzzy appearance by randomly altering the endpoint of the
-    // reflected ray. The length of this alteration is determined by the fuzz factor.
-    //
-    // ============================================
-    Metal {
-        albedo: Color,
-        fuzz: f64,
-    },
+    /// Shiny, shiny metals! Scattered rays are perfectly reflected about the surface normal. Also
+    /// includes a "fuzzy" parameter that achieves a fuzzy appearance by randomly altering the endpoint of the
+    /// reflected ray. The length of this alteration is determined by the fuzz factor.
+    Metal { albedo: Color, fuzz: f64 },
 
-    // ============================================
-    //
-    // Dielectric Material
-    //
-    // Materials that refract!
-    //
-    // ============================================
+    /// Materials that refract!
     Dielectric {
-        // This is really the "context-aware" refractive index of the object. Meaning that it should
+        /// This is really the "context-aware" refractive index of the object. Meaning that it should
         /// used as the ratio of the refractive index of the object divided by the refractive index of
         /// the enclosing medium. In most cases the enclosing medium is air (i.e refractive index of
         /// 1.0), but if you have embedded objects, you need to be careful to divide by the
@@ -49,7 +27,11 @@ pub enum Material {
 
 /// Represents the reflected/refracted ray properties from a material interaction
 pub struct ScatterRecord {
+    /// Refers to the fraction of the light energy lost as the material passes through / is
+    /// reflected from the surface of some material
     pub attenuation: Color,
+    /// The direction vector representing the path of the incident ray after it interacts with the
+    /// material surface
     pub scattered: Ray,
 }
 
@@ -57,6 +39,7 @@ impl Material {
     pub fn scatter(&self, ray: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         match self {
             Material::Lambertian { albedo } => {
+                // Lambertian reflectance used to determine the scattered ray
                 let mut scatter_direction = rec.normal + Vec3::in_unit_sphere().into_unit();
                 if scatter_direction.is_near_zero() {
                     scatter_direction = rec.normal;
@@ -113,6 +96,7 @@ impl Material {
     }
 }
 
+/// Schlick's approximation for computing whether an incident ray reflects or refracts at a material surface
 #[inline]
 fn schlick(refractive_index: f64, cos_theta: f64) -> f64 {
     // Using Schlick's approximation for reflectance
