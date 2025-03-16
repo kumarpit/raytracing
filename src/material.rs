@@ -7,12 +7,22 @@ pub enum Material {
     /// rays scatter in a direction near the surface normal. Another (more simplistic) approach to
     /// achieving a diffuse object is to have the refelcted rays randomly scatter in the hemisphere
     /// containing the surface normal - though these give less realistic results.
-    Lambertian { albedo: Color },
+    Lambertian {
+        /// Each component is in the range [0, 1] -> this represents the fractional reflectance of
+        /// each component of light upon interaction with this material surface
+        albedo: Color,
+    },
 
     /// Shiny, shiny metals! Scattered rays are perfectly reflected about the surface normal. Also
     /// includes a "fuzzy" parameter that achieves a fuzzy appearance by randomly altering the endpoint of the
     /// reflected ray. The length of this alteration is determined by the fuzz factor.
-    Metal { albedo: Color, fuzz: f64 },
+    Metal {
+        /// Same as Lambertian
+        albedo: Color,
+        /// Fuzz is in the range [0, 1] and represents that slight deviation added to the reflected
+        /// ray to achieve fuzzy reflections
+        fuzz: f64,
+    },
 
     /// Materials that refract!
     Dielectric {
@@ -20,7 +30,7 @@ pub enum Material {
         /// used as the ratio of the refractive index of the object divided by the refractive index of
         /// the enclosing medium. In most cases the enclosing medium is air (i.e refractive index of
         /// 1.0), but if you have embedded objects, you need to be careful to divide by the
-        ///   appropriate refractive index.
+        /// appropriate refractive index.
         refractive_index: f64,
     },
 }
